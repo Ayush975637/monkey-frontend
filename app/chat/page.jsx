@@ -388,7 +388,7 @@ if(activeFriend){
   return (
     <div className=" flex flex-row  w-full h-screen   ">
       {/* Sidebar - Always visible on desktop, conditionally on mobile */}
-{showSidebar&& <div><d}
+
 
 
 
