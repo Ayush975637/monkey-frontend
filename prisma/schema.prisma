@@ -1,0 +1,236 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = "postgresql://postgres.nwtbjqptwpmibccgnyxn:C4xrcdn9hdY2vDl0@aws-0-ap-south-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
+  directUrl = "postgresql://postgres.nwtbjqptwpmibccgnyxn:C4xrcdn9hdY2vDl0@aws-0-ap-south-1.pooler.supabase.com:5432/postgres"
+}
+
+model User {
+  id             String     @id @default(uuid())
+  clerkUserId    String     @unique // clerk user id
+  email          String     @unique
+  name           String?
+  imageUrl       String?
+  gender         Gender
+  dob            DateTime   @default(now())
+  country   String?  // e.g. "India"
+  state     String?  // e.g. "Uttar Pradesh"
+  city      String ? // e.g. "Kanpur"
+  // OPTIONAL if you want map features or distance filter:
+  latitude  Float?  // optional
+  longitude Float? 
+  isPremium      Boolean    @default(false)
+  interests      Interest[] @default([]) // array of tags: ["gaming", "music", "india"]
+  preferredLang  Language[] @default([]) // e.g. "en", "hi", "es"
+  matchesAsUser1 Match[]    @relation("User1Matches")
+  matchesAsUser2 Match[]    @relation("User2Matches")
+  historyAsUser1 History[]  @relation("User1")
+  
+  historyAsUser2 History[]  @relation("User2")
+
+  roomsJoined     RoomParticipant[] @relation("userparticipate")
+  subscriptions   Subscription[]    @relation("usersubscription")
+  aitranscripts   AITranscript[]    @relation("userai")
+  messages        Message[]         @relation("usersender")
+  sentFriends     Friendship[]      @relation("UserFriend")
+  receivedFriends Friendship[]      @relation("FriendOfUser")
+  userReported    Report[]           @relation("ReportedBy")
+
+  reportedUser    Report[]            @relation("ReportedTo")
+messagesenderperson MessageWithFreinds[]  @relation("MessageSender")
+messagereceiverperson MessageWithFreinds[]  @relation("MessageReceiver")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Match {
+  id        String    @id @default(uuid())
+  user1Id   String
+  user2Id   String
+  user1     User      @relation("User1Matches", fields: [user1Id], references: [id])
+  user2     User      @relation("User2Matches", fields: [user2Id], references: [id])
+  roomId    String?
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+  room      Room?     @relation("roommatch", fields: [roomId], references: [id])
+
+  @@map("matches")
+}
+
+model Room {
+  id           String            @id @default(cuid())
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  endedAt      DateTime?
+  participants RoomParticipant[] @relation("participantsroom")
+  messages     Message[]         @relation("roommessage")
+  aiEvents     AITranscript[]    @relation("roomai")
+  matches      Match[]           @relation("roommatch")
+}
+
+model RoomParticipant {
+  id       String    @id @default(cuid())
+  userId   String
+  user     User      @relation("userparticipate", fields: [userId], references: [id])
+  roomId   String
+  room     Room      @relation("participantsroom", fields: [roomId], references: [id])
+  joinedAt DateTime  @default(now())
+  leftAt   DateTime?
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  senderId  String
+  sender    User     @relation("usersender", fields: [senderId], references: [id])
+  roomId    String
+  room      Room     @relation("roommessage", fields: [roomId], references: [id])
+  createdAt DateTime @default(now())
+}
+model MessageWithFreinds {
+  id        String   @id @default(uuid())
+  content   String
+  type      MessageType @default(TEXT)
+  senderId  String
+  receiverId String
+  sender    User     @relation("MessageSender", fields: [senderId], references: [id])
+  receiver  User     @relation("MessageReceiver", fields: [receiverId], references: [id])
+  createdAt DateTime @default(now())
+}
+
+
+
+model AITranscript {
+  id             String   @id @default(cuid())
+  roomId         String
+  room           Room     @relation("roomai", fields: [roomId], references: [id])
+  userId         String
+  user           User     @relation("userai", fields: [userId], references: [id])
+  text           String
+  lang           String
+  isTranslated   Boolean  @default(false)
+  translatedText String?
+  createdAt      DateTime @default(now())
+}
+
+model Subscription {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation("usersubscription", fields: [userId], references: [id])
+  plan          String // "PLUS", "PLUS_PLUS", etc.
+  startDate     DateTime @default(now())
+  endDate       DateTime
+  razorpayId    String?
+  paymentStatus String   @default("PENDING")
+}
+
+model Friendship {
+  id        String   @id @default(uuid())
+  userId    String
+  friendId  String
+  user      User     @relation("UserFriend", fields: [userId], references: [id])
+  friend    User     @relation("FriendOfUser", fields: [friendId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([userId, friendId]) // Avoid duplicates
+  @@map("friendships")
+}
+model Report{
+id        String   @id @default(uuid())
+userId    String
+reportedId String
+reason     String
+user      User     @relation("ReportedBy", fields: [userId], references: [id])
+reportedUser User  @relation("ReportedTo", fields: [reportedId], references: [id])
+createdAt DateTime @default(now())
+
+ @@unique([userId, reportedId])
+@@map("reports")
+}
+model History{
+    id        String    @id @default(uuid())
+  user1Id   String
+  user2Id   String
+  user1     User      @relation("User1", fields: [user1Id], references: [id])
+  user2     User      @relation("User2", fields: [user2Id], references: [id])
+  roomId    String?
+  startedAt DateTime  @default(now())
+  endedAt   DateTime?
+
+
+  @@map("history")
+}
+model Contact{
+id        String    @id @default(uuid())
+name      String
+email     String
+subject   String 
+message   String
+createdAt DateTime @default(now())
+
+@@map("contact")
+}
+
+
+enum MessageType{
+  TEXT
+  IMAGE
+  VIDEO
+  AUDIO
+  FILE
+}
+
+
+
+enum Gender {
+  MALE
+  FEMALE
+}
+
+enum Interest {
+  MUSIC
+  TRAVEL
+  SPORTS
+  READING
+  MOVIES
+  TECHNOLOGY
+  ART
+  DANCE
+  FITNESS
+  GAMING
+  PHOTOGRAPHY
+  WRITING
+  COOKING
+  FASHION
+  GARDENING
+}
+
+enum Language {
+  ENGLISH
+  HINDI
+  SPANISH
+  FRENCH
+  GERMAN
+  CHINESE
+  JAPANESE
+  KOREAN
+  TAMIL
+  TELUGU
+  BENGALI
+  MARATHI
+  GUJARATI
+  PUNJABI
+  MALAYALAM
+}
