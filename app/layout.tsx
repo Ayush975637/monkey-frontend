@@ -6,8 +6,9 @@ import {
   ClerkProvider,
   
 } from '@clerk/nextjs'
-
+import { usePWA } from "@/hooks/usePWA";
 import { Toaster } from "sonner";
+
 
 
 
@@ -38,6 +39,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  usePWA();
   return (
      <ClerkProvider>
     <html lang="en" suppressHydrationWarning >
