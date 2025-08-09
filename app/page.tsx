@@ -1,15 +1,10 @@
 "use client";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  ClerkProvider,
   SignInButton,
-  SignUpButton,
-  SignedIn,
   SignedOut,
-  UserButton,
 } from '@clerk/nextjs'
-import { useUser } from '@clerk/nextjs';
-import { useRouter } from 'next/navigation';
+
 import { useSocket } from "@/context/SocketContext";
 import {
   Dialog,
@@ -24,17 +19,9 @@ import {
   LucideVideo, 
   LucideMessageSquare, 
   LucideUser, 
-  LucideSettings, 
   Clock,
-  LucideSparkles,
   LucideZap,
   LucideHeart,
-  LucideGlobe,
-  LucideShield,
-  LucideUsers,
-  LucidePlay,
-  LucideMic,
-  LucideCamera,
   Menu,
   Coins,
   Crown,
@@ -43,10 +30,7 @@ import {
 } from "lucide-react";
 import {
   Card,
-  CardAction,
   CardContent,
-  CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -62,18 +46,13 @@ import {
 } from "@/components/ui/dropdown-menu"
 import {
   NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuIndicator,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
-  NavigationMenuTrigger,
-  NavigationMenuViewport,
 } from "@/components/ui/navigation-menu"
 import { SignOutButton } from '@clerk/nextjs';
 import { Button } from "@/components/ui/button";
-import { checkUser } from "@/actions/video";
-import { Outlines } from "@react-three/drei";
+
 
 const coins=[
   {id:1,name:"100 coins",price:100},
@@ -93,10 +72,7 @@ const App = () => {
   const [activeTab, setActiveTab] = useState("home");
   const [isLoaded, setIsLoaded] = useState(false);
   const[numOnline,setNumOnline]=useState(1170);
-   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
-   const { user } = useUser();
-   const router = useRouter();
-   const {socket,socketId} = useSocket();
+   const {socket} = useSocket();
 
 
 
@@ -104,12 +80,12 @@ const App = () => {
   useEffect(() => {
     if(!socket) return;
 // socket.emit("userConnected", { userId: user?.id });
-socket.on("numOnline",(num)=>{
+socket.on("numOnline",(num: number)=>{
   setNumOnline(num+numOnline);
 })
 
     setIsLoaded(true);
-  }, [socket]);
+  }, [socket, numOnline]);
 
   // Bottom nav items
   const navItems = [
@@ -118,9 +94,7 @@ socket.on("numOnline",(num)=>{
     { id: "chat", icon: <LucideMessageSquare className="w-5 h-5" />, label: "Chat",path:"chat" },
     { id: "profile", icon: <LucideUser className="w-5 h-5" />, label: "Profile",path:"profile" },
   ];
-  const handleCoins=()=>{
-   
-  }
+
   // Floating particles animation
   // const FloatingParticles = () => (
 
@@ -241,8 +215,9 @@ socket.on("numOnline",(num)=>{
       <DialogDescription>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
           
-          {coins.map((coin)=>(
+                      {coins.map((coin)=>(
             <motion.div 
+            key={coin.id}
             initial={{scale:1}}
             whileHover={{scale:1.2}}
             whileTap={{scale:.9}}
@@ -563,10 +538,9 @@ className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-b-xl 
           <div className="mx-4 mb-4">
             <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-2">
               <div className="flex justify-around items-center">
-                {navItems.map((item, index) => (
+                {navItems.map((item) => (
                   <Link href={`/${item.path}`}    key={item.id} >
                   <motion.button
-                    key={item.id}
                     onClick={() => setActiveTab(item.id)}
                     whileTap={{ scale: 0.9 }}
                     className="relative flex flex-col items-center p-3 rounded-xl transition-all duration-300"

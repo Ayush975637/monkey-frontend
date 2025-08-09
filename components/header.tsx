@@ -2,12 +2,9 @@
 import React from 'react'
 
 import { motion } from "framer-motion";
-import { LucideVideo, LucideMic, LucideSettings, LucideSparkles, LucideUser, LucideMessagesSquare } from "lucide-react";
+import { LucideSettings, LucideSparkles } from "lucide-react";
 import { Button } from "@/components/ui/button"; // ShadCN Button
-import { Card } from "@/components/ui/card"; // ShadCN Card
-
 import {
-  ClerkProvider,
   SignInButton,
   SignUpButton,
   SignedIn,

@@ -6,8 +6,7 @@ import {
   ClerkProvider,
   
 } from '@clerk/nextjs'
-import { Button } from "@/components/ui/button";
-import Header from "@/components/header";
+
 import { Toaster } from "sonner";
 
 
@@ -27,7 +26,7 @@ export const metadata: Metadata = {
   description: "A funny video chat app",
   manifest:"/manifest.json",
   icons:{
-    icon:"/icon1.png",
+    icon:"/1921.png",
     apple:"/apple-icon.png",
     
   }

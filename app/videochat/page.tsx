@@ -1,16 +1,16 @@
 "use client";
-import React, { useEffect, useRef, useState } from "react";
-import connectSocket from "@/lib/socket";
+import React, { useEffect, useRef, useState, useCallback } from "react";
+
 import { useUser } from "@clerk/nextjs"; // 👈 import Clerk hook
 import { useRouter } from "next/navigation";
 import SimplePeer from "simple-peer";
 import { Button } from "@/components/ui/button";
 import { getDbId } from "@/actions/chat";
-import { MessageSquare, Paperclip, Send, Smile } from "lucide-react";
+import { Send, Smile } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { getReportedUser } from "@/actions/report";
-import { motion } from "framer-motion";
+
 import { savehistory1, savehistory2 } from "@/actions/history";
 import { getfriendData } from "@/actions/getprofile";
 import { requestfriend } from "@/actions/friend";
@@ -21,7 +21,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
+
 } from "@/components/ui/dialog";
 import { reportUser } from "@/actions/report";
 import { toast } from "sonner";
@@ -39,7 +39,7 @@ const reportReasons = [
   { id: 10, reason: "❓ Other" }
 ];
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { DialogOverlayProps } from "@radix-ui/react-dialog";
+
 
 
 
@@ -50,32 +50,36 @@ export default function Call() {
   const { isLoaded, isSignedIn, user } = useUser();
   const { socket, socketId } = useSocket(); // 👈 load Clerk
   const router = useRouter();
-  const myVideo = useRef();
-  const userVideo = useRef();
-  const [remoteStream, setRemoteStream] = useState(null);
-  const streamRef = useRef();
-  const peerRef = useRef();
+  const myVideo = useRef<HTMLVideoElement>(null);
+  const userVideo = useRef<HTMLVideoElement>(null);
+
+  const streamRef = useRef<MediaStream | null>(null);
+  const peerRef = useRef<SimplePeer.Instance | null>(null);
   const [micOn, setMicOn] = useState(true);
   const [camOn, setCamOn] = useState(true);
   const [callDuration, setCallDuration] = useState(0);
-  const callTimerRef = useRef(null);
-  const messagesEndRef = useRef(null);
-  const [messages, setMessages] = useState([]);
+  const callTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [messages, setMessages] = useState<{ senderId: string; content: string }[]>([]);
   const [callStarted, setCallStarted] = useState(false);
-  const [friendId, setFriendId] = useState(null);
+  const [friendId, setFriendId] = useState<string | null>(null);
   const [input, setInput] = useState("");
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [report, setReport] = useState(false);
-  const [reportReason, setReportReason] = useState("");
-  const [friendClerkId, setFriendClerkId] = useState(null);
-  const [dbFriendId, setDbFriendId] = useState(null);
-  const [ended, setEnded] = useState(false);
-  const [connected, setConnected] = useState(false);
-  const [matched, setMatched] = useState(false);
+
+  const [friendClerkId, setFriendClerkId] = useState<string | null>(null);
+  const [dbFriendId, setDbFriendId] = useState<string | null>(null);
+  const [ended] = useState(false);
   const [reportedCount, setReportedCount] = useState(0);
-  const [roomId, setRoomId] = useState(null);
-  const [historyId, setHistoryId] = useState(null);
-  const [friendData, setFriendData] = useState(null);
+  const [roomId, setRoomId] = useState<string | null>(null);
+  const [historyId, setHistoryId] = useState<string | null>(null);
+  const [friendData, setFriendData] = useState<{
+    imageUrl?: string;
+    name?: string;
+    city?: string;
+    country?: string;
+    dob?: Date;
+  } | null>(null);
   const today = new Date();
 
   const sendMessage = () => {
@@ -102,8 +106,27 @@ export default function Call() {
     setInput("");
   };
 
+  const endCall = useCallback((shouldStopStream = true) => {
+    if (callTimerRef.current) {
+      if (callTimerRef.current) clearInterval(callTimerRef.current);
+    }
+    setCallDuration(0);
+    setCallStarted(false);
+    setFriendId(null);
+    setFriendClerkId(null);
 
- 
+    if (peerRef.current) {
+      peerRef.current.destroy();
+      peerRef.current = null;
+    }
+    if (shouldStopStream && streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    router.push("/");
+    setMessages([]);
+  }, [router]);
+
 
 
   useEffect(() => {
@@ -124,31 +147,28 @@ export default function Call() {
   
     return () => {
        endCall(false); 
-      // if (streamRef.current) {
-      //   streamRef.current.getTracks().forEach((t) => t.stop());
-      // }
     };
-  }, []);
+  }, [socket, endCall]);
   
   useEffect(() => {
     if ( !socket || !streamRef.current) return;
   
-    const handleReceive = (msg) => {
+    const handleReceive = (msg: { senderId: string; content: string }) => {
       console.log("📨 Chat message received:", msg);
       setMessages((prev) => [...prev, msg]);
     };
   
-    const handleRoomId = (roomId) => {
+    const handleRoomId = (roomId: string) => {
       console.log("🔞 Room ID received:", roomId);
       setRoomId(roomId);
     };
   
-    const handleGetClerkId = (clerkId) => {
+    const handleGetClerkId = (clerkId: string) => {
       console.log("👤 Friend's Clerk ID:", clerkId);
       setFriendClerkId(clerkId);
     };
   
-    const handleMatch = (peerId) => {
+    const handleMatch = (peerId: string) => {
       console.log("🔥 Matched with:", peerId);
       setFriendId(peerId);
       socket.emit("findClerkId", peerId);
@@ -161,7 +181,7 @@ export default function Call() {
       const peer = new SimplePeer({
         initiator: true,
         trickle: false,
-        stream: streamRef.current,
+        stream: streamRef.current || undefined,
       });
   
       peer.on("signal", (signalData) => {
@@ -171,7 +191,7 @@ export default function Call() {
   
       peer.on("stream", (remoteStream) => {
         console.log("📥 Received remote stream");
-        setRemoteStream(remoteStream);
+        if (userVideo.current) userVideo.current.srcObject = remoteStream;
         setCallStarted(true);
         // remoteStream.getTracks().forEach(track => {
         //   console.log(`${track.kind} track:`, track.readyState, track.enabled ? 'enabled' : 'disabled');
@@ -191,9 +211,9 @@ export default function Call() {
         console.log("✅ Peer connection established");
         console.log("✅ Peer connection established");
   console.log("Local tracks:", streamRef.current?.getTracks());
-  console.log("Remote tracks:", peerRef.current?.stream?.getTracks());
+  console.log("Remote tracks:", peerRef.current?.streams?.[0]?.getTracks());
        
-        setMatched(true);
+
         callTimerRef.current = setInterval(() => {
           setCallDuration((prev) => prev + 1);
         }, 1000);
@@ -206,7 +226,7 @@ export default function Call() {
       peerRef.current = peer;
     };
   
-    const handleSignal = ({ peerId, signalData }) => {
+    const handleSignal = ({ peerId, signalData }: { peerId: string; signalData: unknown }) => {
       console.log("📨 Received signal from peer:", peerId);
       setFriendId(peerId);
       socket.emit("findClerkId", peerId);
@@ -215,7 +235,7 @@ export default function Call() {
         const peer = new SimplePeer({
           initiator: false,
           trickle: false,
-          stream: streamRef.current,
+          stream: streamRef.current || undefined,
         });
   
         peer.on("signal", (answerSignal) => {
@@ -225,8 +245,8 @@ export default function Call() {
   
         peer.on("stream", (remoteStream) => {
           console.log("📥 Received remote stream");
-        setRemoteStream(remoteStream);
-        setCallStarted(true);
+          if (userVideo.current) userVideo.current.srcObject = remoteStream;
+          setCallStarted(true);
           // if (userVideo.current) userVideo.current.srcObject = remoteStream;
           // if (userVideo.current) {
           //   console.log("Assigning stream to video element");
@@ -241,9 +261,9 @@ export default function Call() {
           console.log("✅ Peer connection established");
           console.log("✅ Peer connection established");
   console.log("Local tracks:", streamRef.current?.getTracks());
-  console.log("Remote tracks:", peerRef.current?.stream?.getTracks());
+  console.log("Remote tracks:", peerRef.current?.streams?.[0]?.getTracks());
           
-          setMatched(true);
+  
           callTimerRef.current = setInterval(() => {
             setCallDuration((prev) => prev + 1);
           }, 1000);
@@ -253,10 +273,10 @@ export default function Call() {
         //   console.error("❌ Peer error:", err);
         // });
   
-        peer.signal(signalData);
+        peer.signal(signalData as SimplePeer.SignalData);
         peerRef.current = peer;
       } else {
-        peerRef.current.signal(signalData);
+        peerRef.current.signal(signalData as SimplePeer.SignalData);
       }
     };
   
@@ -280,10 +300,10 @@ export default function Call() {
       socket.off("signal", handleSignal);
   
       if (peerRef.current) peerRef.current.destroy();
-      clearInterval(callTimerRef.current);
+      if (callTimerRef.current) clearInterval(callTimerRef.current);
       setCallDuration(0);
     };
-  }, [isLoaded, isSignedIn, socket, streamRef.current]);
+  }, [isLoaded, isSignedIn, socket]);
   
 
 const toggleMic = () => {
@@ -300,28 +320,7 @@ const toggleMic = () => {
       setCamOn(videoTrack.enabled);
     }
   };
-  const endCall = (shouldStopStream = true) => {
-    if (callTimerRef.current) {
-      clearInterval(callTimerRef.current);
-    }
-    setCallDuration(0);
-    setCallStarted(false);
-    setFriendId(null);
-    setFriendClerkId(null);
 
-    if (peerRef.current) {
-
-
-      peerRef.current.destroy();
-      peerRef.current = null;
-    }
-    if (shouldStopStream && streamRef.current) {
-      streamRef.current.getTracks().forEach((track) => track.stop());
-      streamRef.current = null;
-    }
-    router.push("/");
-    setMessages([]);
-  }
 
   const skipUser = () => {
     if (!socket) return;
@@ -329,7 +328,7 @@ const toggleMic = () => {
 
     socket.emit("skip", { peerId: friendId });
     if (callTimerRef.current) {
-      clearInterval(callTimerRef.current);
+      if (callTimerRef.current) clearInterval(callTimerRef.current);
       callTimerRef.current = null;
     }
 
@@ -353,9 +352,7 @@ const toggleMic = () => {
     }
   }, [messages]);
 
-  const handleReportReason = async (reason) => {
-    setReportReason(reason);
-
+  const handleReportReason = async (reason: string) => {
     setReport(false);
 
     try {
@@ -370,11 +367,11 @@ const toggleMic = () => {
         toast.success("Reported successfully");
         socket.emit("findNext");
       }
-    } catch (err) {
+    } catch {
       toast.error("Failed to report user. Please try again.");
     }
 
-    setReportReason("");
+
 
   };
 
@@ -395,8 +392,7 @@ const toggleMic = () => {
   }, [roomId,friendClerkId]);
 
   useEffect(() => {
-    if (!roomId || !dbFriendId) return;
-    if (callStarted) {
+    if (callStarted && dbFriendId && roomId) {
      
       const saveHistory = async () => {
         const res = await savehistory1(dbFriendId, roomId);
@@ -407,14 +403,10 @@ const toggleMic = () => {
       }
       saveHistory();
     }
-    
-
-
-  }, [callStarted])
+  }, [callStarted, dbFriendId, roomId])
 
 useEffect(()=>{
-  if (ended) {
-    if (!historyId) return;
+  if (ended && historyId) {
     const saveHistory = async () => {
       const res = await savehistory2(historyId);
       if (res?.error) {
@@ -423,9 +415,7 @@ useEffect(()=>{
     }
     saveHistory();
   }
-
-
-},[ended]);
+},[ended, historyId]);
 
 
 
@@ -510,7 +500,7 @@ useEffect(()=>{
                   <div className="text-sm lg:text-base font-bold">{friendData?.name}</div>
                   <div className="text-xs lg:text-sm">
                     {friendData?.city}, {friendData?.country} • 
-                    {today?.getFullYear() - friendData?.dob?.getFullYear()}
+                    {friendData?.dob ? today?.getFullYear() - friendData.dob.getFullYear() : 'N/A'}
                   </div>
                 </div>
               </div>
