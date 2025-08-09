@@ -23,8 +23,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ChikChak",
+  title: "ChikChak-VideoChat app",
   description: "A funny video chat app",
+  manifest:"/manifest.json",
+  icons:{
+    icon:"/192.png",
+    apple:"/icon1.png",
+    
+  }
+
 };
 
 export default function RootLayout({
