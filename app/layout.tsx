@@ -6,7 +6,7 @@ import {
   ClerkProvider,
   
 } from '@clerk/nextjs'
-import { usePWA } from "@/hooks/usePWA";
+import PWAInitializer from "@/components/PWA";
 import { Toaster } from "sonner";
 
 
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   description: "A funny video chat app",
   manifest:"/manifest.json",
   icons:{
-    icon:"/1921.png",
+    icon:"/icon1.png",
     apple:"/apple-icon.png",
     
   }
@@ -39,7 +39,7 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  usePWA();
+  
   return (
      <ClerkProvider>
     <html lang="en" suppressHydrationWarning >
@@ -51,6 +51,7 @@ export default function RootLayout({
         <main className="">{children}</main>
         </SocketProvider>
         <Toaster />
+        <PWAInitializer />
         </body>
 
     </html>
