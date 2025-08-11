@@ -538,20 +538,15 @@ useEffect(()=>{
               >
                 🫰🏽 Send friend request
               </Button>
-  
-              {/* Remote Video */}
-              {userVideo.current?.srcObject ? (
-                <video 
+              <video 
                   ref={userVideo} 
                   autoPlay  
                   playsInline 
                   className="w-full h-full object-cover"
                 />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-900">
-                  <p className="text-white text-lg">Connecting...</p>
-                </div>
-              )}
+  
+              {/* Remote Video */}
+             
             </>
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-red-500">
@@ -559,18 +554,7 @@ useEffect(()=>{
             </div>
           )}
         </div>
-  {userVideo.current?.srcObject ? (
-                <video 
-                  ref={userVideo} 
-                  autoPlay  
-                  playsInline 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center bg-gray-900">
-                  <p className="text-white text-lg">Connecting...</p>
-                </div>
-              )}
+
         {/* Local Video Section */}
         <div className="relative h-[50vh] lg:h-full lg:w-1/2 bg-gray-800">
           {/* Control Buttons */}

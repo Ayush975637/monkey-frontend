@@ -26,10 +26,13 @@ export const metadata: Metadata = {
   title: "Spider-VideoChat app",
   description: "A funny video chat app",
   manifest:"/manifest.json",
+  themeColor: "#ffffff",
   icons:{
-    icon:"/icon1.png",
-    apple:"/apple-icon.png",
-    
+    icon: [
+      { url: "/icons/192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/512.png", sizes: "512x512", type: "image/png" }
+    ],
+    apple:"/icons/apple-icon.png",
   }
 
 };
