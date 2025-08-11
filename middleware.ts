@@ -1,6 +1,6 @@
 import { clerkMiddleware,createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse,NextRequest } from "next/server";
-import arcjet,{detectBot, shield,createMiddleware} from '@arcjet/next';
+// import arcjet,{detectBot, shield,createMiddleware} from '@arcjet/next';
 
 // const isProtectedRoute=createRouteMatcher([
 
@@ -22,11 +22,7 @@ const isPublicRoute = createRouteMatcher([
   '/premium',
   '/privacy',
   '/terms',
-  "/videochat(.*)",
-    "/chat(.*)",
-      "/profile(.*)",
-      "/history(.*)",
-"/editprofile(.*)",
+  
 ])
 const isProtectedRoute = createRouteMatcher([
   '/videochat(.*)',
@@ -40,6 +36,10 @@ const isProtectedRoute = createRouteMatcher([
 export default clerkMiddleware(async (auth, req: NextRequest) => {
   const { userId, sessionClaims, redirectToSignIn } = await auth();
 
+  if (isPublicRoute(req)) {
+    return NextResponse.next();
+  }
+ 
 
   if (userId && isOnboardingRoute(req)) {
     return NextResponse.next()
