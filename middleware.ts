@@ -76,10 +76,9 @@ const isProtectedRoute = createRouteMatcher([
 ]);
 
 export default clerkMiddleware(async (auth, req: NextRequest) => {
-  const authData = await auth();
-  if (!authData) return authData.redirectToSignIn();
+ 
 
-  const { userId, sessionClaims, redirectToSignIn } = authData;
+  const { userId, sessionClaims, redirectToSignIn } = await auth();
 
   // Allow public routes without auth
   if (isPublicRoute(req)) return NextResponse.next();
