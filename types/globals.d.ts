@@ -1,8 +1,16 @@
 export {}
 
 declare global {
+  interface WorkboxLike {
+    addEventListener: (
+      type: string,
+      callback: (event: { isUpdate?: boolean }) => void
+    ) => void
+    register: () => void
+  }
+
   interface Window {
-    workbox?: any
+    workbox?: WorkboxLike
   }
   interface CustomJwtSessionClaims {
     metadata: {

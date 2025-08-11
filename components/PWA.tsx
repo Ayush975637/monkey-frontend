@@ -7,7 +7,7 @@ export default function PWAInitializer() {
     if (typeof window !== 'undefined' &&
         'serviceWorker' in navigator &&
         process.env.NODE_ENV === 'production') {
-      const wb = (window as any).workbox;
+      const wb = (window as unknown as Window).workbox;
       if (wb) {
         wb.addEventListener('installed', (event: { isUpdate?: boolean }) => {
           console.log(event?.isUpdate ? 'App updated' : 'App installed');
