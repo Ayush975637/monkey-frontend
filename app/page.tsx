@@ -4,6 +4,7 @@ import {
   SignInButton,
   SignedOut,
 } from '@clerk/nextjs'
+import { useUser } from '@clerk/nextjs'
 
 import { useSocket } from "@/context/SocketContext";
 import {
@@ -73,19 +74,22 @@ const App = () => {
   const [isLoaded, setIsLoaded] = useState(false);
   const[numOnline,setNumOnline]=useState(1170);
    const {socket} = useSocket();
+   const {isSignedIn} = useUser();
 
 
 
 
   useEffect(() => {
-    if(!socket) return;
-// socket.emit("userConnected", { userId: user?.id });
-socket.on("numOnline",(num: number)=>{
-  setNumOnline(num+numOnline);
-})
-
+    // Show content immediately for all users, not just when socket connects
     setIsLoaded(true);
-  }, [socket, numOnline]);
+    
+    // Only set up socket listeners if user is logged in and socket exists
+    if (socket && isSignedIn) {
+      socket.on("numOnline", (num: number) => {
+        setNumOnline(num + numOnline);
+      });
+    }
+  }, [socket, isSignedIn, numOnline]);
 
   // Bottom nav items
   const navItems = [
@@ -337,11 +341,13 @@ className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-b-xl 
     </Link>
     <DropdownMenuSeparator />
     <DropdownMenuItem>
-       
+       {isSignedIn && (
+        <div className="flex items-center gap-2">
            <SignOutButton />
            <LogOut size={20} className="text-red-400"></LogOut>
+           </div>
       
-      
+       )}
       </DropdownMenuItem>
   </DropdownMenuContent>
 </DropdownMenu>
